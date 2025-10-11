@@ -27,9 +27,9 @@
 
 ---
 
-InsightTube/
-│
+YouTube_Video-Summarizer-QA-Assistant/
+|
 ├── main.py              # Main workflow script
 ├── requirements.txt     # Python dependencies
 ├── README.md            # Project documentation
-└──  .env                 # Environment variables (Groq API key)
+└── .env                 # Environment variables (Groq API key)
