@@ -26,3 +26,9 @@
 - **RunnableParallel, PromptTemplate** – For chaining retrieval, summarization, and Q&A
 
 ---
+
+YouTube_Video-Summarizer-QA-Assistant/
+│
+├── main.py              # Main workflow script
+├── requirements.txt     # Python dependencies
+└── README.md            # Project documentation
