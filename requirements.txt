@@ -1,20 +1,12 @@
-# Core packages
-python-dotenv==1.0.1
-requests==2.31.0
-
-# YouTube transcript
-youtube-transcript-api==0.6.0
-
-# LangChain and related packages
-langchain==0.1.202
-langchain-openai==0.0.9
-langchain-community==0.0.57
-
-# FAISS for vector embeddings
-faiss-cpu==1.7.4
-
-# Groq API client (replace with actual package if official)
-groq==0.0.1
-
-# Optional utilities
-tqdm==4.66.1
+youtube-transcript-api
+langchain-community
+langchain-openai
+faiss-cpu
+tiktoken 
+python-dotenv
+deep-translator
+langchain-groq
+langchain-huggingface
+sentence-transformers
+pytube
+pyperclip
