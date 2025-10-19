@@ -4,7 +4,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from urllib.parse import parse_qs, urlparse
-from urllib.request import urlopen
+from urllib.request import urlopen, Request  # <-- IMPORT Request
 
 from dotenv import load_dotenv
 
@@ -30,7 +30,7 @@ from langchain_core.runnables import (
 
 try:
     from pytube import YouTube
-except Exception:   
+except Exception:
     YouTube = None
 try:
     import yt_dlp
@@ -40,6 +40,10 @@ except Exception:
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
+
+# --- ADD BROWSER USER AGENT ---
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
 
 PREFERRED_LANGUAGES = [
     "en",
@@ -125,7 +129,9 @@ def _parse_vtt_payload(payload: str) -> str | None:
 
 def _download_caption_text(url: str) -> str | None:
     try:
-        with urlopen(url) as response:  # nosec: trusted source (YouTube)
+        # --- ADD HEADERS TO REQUEST ---
+        req = Request(url, headers={"User-Agent": UA})
+        with urlopen(req) as response:
             payload_bytes = response.read()
     except Exception as exc:
         print(f"Failed to download caption track: {exc}")
@@ -148,6 +154,7 @@ def _transcript_via_yt_dlp(video_id: str) -> str | None:
         "writeautomaticsub": True,
         "subtitlesformat": "json3",
         "subtitleslangs": PREFERRED_LANGUAGES,
+        "user_agent": UA,  # --- ADD USER AGENT ---
     }
 
     url = f"https://www.youtube.com/watch?v={video_id}"
@@ -156,7 +163,8 @@ def _transcript_via_yt_dlp(video_id: str) -> str | None:
             info = ydl.extract_info(url, download=False)
     except Exception as exc:
         print(f"yt-dlp transcript lookup failed: {exc}")
-        return None
+        # --- RETURN SPECIFIC ERROR MESSAGE ---
+        return "ERROR: yt-dlp failed. This may be a network block from the hosting provider."
 
     sources = []
     for key in ("requested_subtitles", "subtitles", "automatic_captions"):
@@ -206,88 +214,28 @@ def yt_id(url: str) -> str | None:
 
 
 def get_transcript(video_id: str) -> str | None:
-    """Return an English transcript for the given video or ``None`` if unavailable."""
-
+    """Return an English transcript or an error message string."""
     try:
-        transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript = transcript_list.find_transcript(PREFERRED_LANGUAGES)
+        fetched_chunks = transcript.fetch()
+        if fetched_chunks:
+            transcript_text = _clean_transcript_chunks(fetched_chunks)
+            if transcript_text:
+                return transcript_text
     except TranscriptsDisabled:
-        print("No captions available for this video (explicitly disabled).")
-        return _transcript_via_yt_dlp(video_id)
-    except VideoUnavailable:
-        print("The video is unavailable (private, deleted, or region-blocked).")
-        return None
-    except CouldNotRetrieveTranscript as exc:
-        print(f"YouTubeTranscriptApi could not retrieve transcript: {exc}")
-        return _transcript_via_yt_dlp(video_id)
-    except Exception as exc:
-        print(f"Unexpected transcript retrieval error: {exc}")
-        return _transcript_via_yt_dlp(video_id)
+        return "ERROR: Transcripts are disabled for this video."
+    except NoTranscriptFound:
+        # This is common, so we fall back to yt-dlp silently
+        pass
+    except Exception as e:
+        print(f"YouTubeTranscriptApi failed: {e}")
+        # This is likely a network error
+        return "ERROR: Could not fetch transcript. The hosting provider may be blocked by YouTube."
 
-    selected_transcript = None
-
-    for finder_name in (
-        "find_transcript",
-        "find_manually_created_transcript",
-        "find_generated_transcript",
-    ):
-        finder = getattr(transcripts, finder_name, None)
-        if finder is None:
-            continue
-        try:
-            selected_transcript = finder(PREFERRED_LANGUAGES)
-            if selected_transcript:
-                break
-        except NoTranscriptFound:
-            continue
-
-    if not selected_transcript:
-        for transcript in transcripts:
-            code = (transcript.language_code or "").lower()
-            if code.startswith("en") or code.endswith("en") or "en" in code.split("-"):
-                selected_transcript = transcript
-                break
-
-    if not selected_transcript:
-        for transcript in transcripts:
-            if not transcript.is_translatable:
-                continue
-            try:
-                selected_transcript = transcript.translate("en")
-                if selected_transcript:
-                    break
-            except Exception:
-                continue
-
-    fetched_chunks = None
-    if selected_transcript:
-        try:
-            fetched_chunks = selected_transcript.fetch()
-        except Exception as exc:
-            print(f"Failed to fetch transcript chunks: {exc}")
-            fetched_chunks = None
-
-    if fetched_chunks:
-        transcript_text = _clean_transcript_chunks(fetched_chunks)
-        if transcript_text:
-            return transcript_text
-
+    # Fallback to yt-dlp if the first method fails
     print("Falling back to yt-dlp transcript extraction.")
-    transcript_text = _transcript_via_yt_dlp(video_id)
-    if transcript_text:
-        return transcript_text
-
-    try:
-        fetched_chunks = YouTubeTranscriptApi.get_transcript(
-            video_id, languages=PREFERRED_LANGUAGES
-        )
-        transcript_text = _clean_transcript_chunks(fetched_chunks)
-        if transcript_text:
-            return transcript_text
-    except Exception as exc:
-        print(f"Direct transcript download failed: {exc}")
-
-    print("No transcripts available for this video after all fallbacks.")
-    return None
+    return _transcript_via_yt_dlp(video_id)
 
 
 def _format_duration(seconds: int | None) -> str | None:
@@ -321,6 +269,7 @@ def _details_via_yt_dlp(video_id: str) -> dict | None:
         "quiet": True,
         "noplaylist": True,
         "skip_download": True,
+        "user_agent": UA,  # --- ADD USER AGENT ---
     }
 
     try:
@@ -347,7 +296,9 @@ def _details_via_oembed(video_id: str) -> dict | None:
         f"https://www.youtube.com/watch?v={video_id}"
     )
     try:
-        with urlopen(url) as response:  # nosec: URL is controlled and uses https
+        # --- ADD HEADERS TO REQUEST ---
+        req = Request(url, headers={"User-Agent": UA})
+        with urlopen(req) as response:
             payload = json.load(response)
     except Exception as exc:
         print(f"YouTube oEmbed lookup failed: {exc}")
@@ -497,4 +448,3 @@ def create_rag_chain(
         | StrOutputParser()
     )
     return chain
-
