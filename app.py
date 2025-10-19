@@ -183,6 +183,7 @@ def process_video(youtube_url: str) -> None:
     if (
         video_id == st.session_state.get("video_id")
         and st.session_state.get("transcript")
+        and not st.session_state.get("transcript", "").startswith("ERROR:")
     ):
         st.session_state["cache_hit"] = True
         st.info("✅ Using the cached transcript for this video.")
@@ -198,9 +199,19 @@ def process_video(youtube_url: str) -> None:
     progress.progress(20, text="Downloading transcript…")
     transcript = main.get_transcript(video_id)
 
+    # Check for specific error strings from main.py
+    if transcript and transcript.startswith("ERROR:"):
+        progress.empty()
+        # Display the specific error message from the backend
+        st.error(f"❌ {transcript}")
+        st.session_state["video_details"] = video_details
+        st.session_state["transcript"] = transcript # Store the error state
+        st.session_state["vector_store"] = None
+        return
+    
     if not transcript:
         progress.empty()
-        st.error("❌ No transcript available. Try another video with subtitles enabled.")
+        st.error("❌ No transcript available. This can happen if the video has no subtitles or if there's a network issue.")
         st.session_state["video_details"] = video_details
         st.session_state["transcript"] = None
         st.session_state["vector_store"] = None
@@ -219,8 +230,8 @@ def build_chain_and_summary(
     model: str, summary_mode: str, temperature: float = 0.7, k_value: int = 6
 ) -> None:
     transcript = st.session_state.get("transcript")
-    if not transcript:
-        st.warning("📼 Please process a video first.")
+    if not transcript or transcript.startswith("ERROR:"):
+        st.warning("📼 Please process a video with a valid transcript first.")
         return
 
     if not st.session_state.get("vector_store"):
@@ -261,7 +272,8 @@ with st.sidebar:
         "Process Video", on_click=process_video, args=(youtube_url,), type="primary"
     )
 
-    if st.session_state.get("transcript"):
+    transcript_state = st.session_state.get("transcript")
+    if transcript_state and not transcript_state.startswith("ERROR:"):
         st.markdown("---")
         st.subheader("⚙️ Model Controls")
         model_choice = st.selectbox(
@@ -299,7 +311,8 @@ st.title("AI YouTube Assistant 🎥🤖")
 
 hero_container = st.container()
 
-if not st.session_state.get("transcript"):
+transcript_state = st.session_state.get("transcript")
+if not transcript_state or transcript_state.startswith("ERROR:"):
     with hero_container:
         st.markdown(
             """
@@ -375,10 +388,11 @@ if st.session_state.get("summary"):
             file_name="video_summary.txt",
             mime="text/plain",
         )
-        if st.session_state.get("transcript"):
+        transcript_state = st.session_state.get("transcript")
+        if transcript_state and not transcript_state.startswith("ERROR:"):
             download_cols[1].download_button(
                 label="Download Transcript",
-                data=st.session_state["transcript"].encode("utf-8"),
+                data=transcript_state.encode("utf-8"),
                 file_name="video_transcript.txt",
                 mime="text/plain",
             )
