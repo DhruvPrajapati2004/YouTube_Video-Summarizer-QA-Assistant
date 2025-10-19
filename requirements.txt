@@ -1,132 +1,40 @@
-aiohappyeyeballs==2.6.1
-aiohttp==3.13.0
-aiosignal==1.4.0
-altair==5.5.0
-annotated-types==0.7.0
-anyio==4.11.0
-asttokens==3.0.0
-attrs==25.4.0
-beautifulsoup4==4.14.2
-blinker==1.9.0
-cachetools==6.2.1
-certifi==2025.10.5
-charset-normalizer==3.4.4
-click==8.3.0
-colorama==0.4.6
-comm==0.2.3
-dataclasses-json==0.6.7
-debugpy==1.8.17
-decorator==5.2.1
-deep-translator==1.11.4
-defusedxml==0.7.1
-distro==1.9.0
-executing==2.2.1
-faiss-cpu==1.12.0
-filelock==3.20.0
-frozenlist==1.8.0
-fsspec==2025.9.0
-gitdb==4.0.12
-GitPython==3.1.45
-greenlet==3.2.4
-groq==0.32.0
-h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
-httpx-sse==0.4.3
-huggingface-hub==0.35.3
-idna==3.11
-ipykernel==7.0.1
-ipython==9.6.0
-ipython_pygments_lexers==1.1.1
-jedi==0.19.2
-Jinja2==3.1.6
-jiter==0.11.0
-joblib==1.5.2
-jsonpatch==1.33
-jsonpointer==3.0.0
-jsonschema==4.25.1
-jsonschema-specifications==2025.9.1
-jupyter_client==8.6.3
-jupyter_core==5.8.1
-langchain==0.3.27
-langchain-community==0.3.31
-langchain-core==0.3.79
-langchain-groq==0.3.8
-langchain-huggingface==0.3.1
-langchain-openai==0.3.35
-langchain-text-splitters==0.3.11
-langsmith==0.4.35
-MarkupSafe==3.0.3
-marshmallow==3.26.1
-matplotlib-inline==0.1.7
-mpmath==1.3.0
-multidict==6.7.0
-mypy_extensions==1.1.0
-narwhals==2.8.0
-nest-asyncio==1.6.0
-networkx==3.5
-numpy==2.3.4
-openai==2.3.0
-orjson==3.11.3
-packaging==25.0
-pandas==2.3.3
-parso==0.8.5
-pillow==11.3.0
-platformdirs==4.5.0
-prompt_toolkit==3.0.52
-propcache==0.4.1
-protobuf==6.33.0
-psutil==7.1.0
-pure_eval==0.2.3
-pyarrow==21.0.0
-pydantic==2.12.2
-pydantic-settings==2.11.0
-pydantic_core==2.41.4
-pydeck==0.9.1
-Pygments==2.19.2
-python-dateutil==2.9.0.post0
-python-dotenv==1.1.1
+streamlit==1.35.0
+python-dotenv==1.0.1
+
+# --- Core transcript and video processing ---
+# For fetching transcripts from YouTube videos
+youtube-transcript-api==0.6.2
+# For fetching video metadata like titles and thumbnails
 pytube==15.0.0
-pytz==2025.2
-pywin32==311
-PyYAML==6.0.3
-pyzmq==27.1.0
-referencing==0.37.0
-regex==2025.9.18
-requests==2.32.5
-requests-toolbelt==1.0.0
-rpds-py==0.27.1
-safetensors==0.6.2
-scikit-learn==1.7.2
-scipy==1.16.2
-sentence-transformers==5.1.1
-setuptools==80.9.0
-six==1.17.0
-smmap==5.0.2
-sniffio==1.3.1
-soupsieve==2.8
-SQLAlchemy==2.0.44
-stack-data==0.6.3
-streamlit==1.50.0
-sympy==1.14.0
-tenacity==9.1.2
-threadpoolctl==3.6.0
-tiktoken==0.12.0
-tokenizers==0.22.1
-toml==0.10.2
-torch==2.9.0
-tornado==6.5.2
-tqdm==4.67.1
-traitlets==5.14.3
-transformers==4.57.1
-typing-inspect==0.9.0
-typing-inspection==0.4.2
-typing_extensions==4.15.0
-tzdata==2025.2
-urllib3==2.5.0
-watchdog==6.0.0
-wcwidth==0.2.14
-yarl==1.22.0
-youtube-transcript-api==1.2.3
-yt-dlp==2025.10.14
-zstandard==0.25.0
+# A powerful tool for downloading video streams, used as a fallback for transcripts
+yt-dlp==2024.07.25
+
+# --- LangChain and AI modules ---
+# The main LangChain library for building the RAG chain
+langchain==0.2.1
+# Core data structures for LangChain
+langchain-core==0.2.3
+# Community-maintained integrations
+langchain-community==0.2.1
+# Integration for the Groq LLM API
+langchain-groq==0.1.5
+# Utility for splitting text into chunks
+langchain-text-splitters==0.2.0
+# The official Groq API client
+groq==0.8.0
+
+# --- Vector Store and Embeddings ---
+# CPU version of the FAISS library for efficient vector search
+faiss-cpu==1.8.0
+# For generating text embeddings to be stored in FAISS
+sentence-transformers==2.7.0
+
+# --- Scientific computing (pinned for compatibility) ---
+# A fundamental package for scientific computing, pinned to a version with pre-built wheels
+numpy==1.26.4
+
+# --- Networking ---
+# For making HTTP requests, used by various libraries
+requests==2.32.3
+# HTTP client library, a dependency of requests
+urllib3<2.0
